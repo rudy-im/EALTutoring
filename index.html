@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>실시간 영어 억양 연습 동기화</title>
+    <style>
+        body {
+            height: 300vh; /* 긴 스크롤 페이지를 만들기 위함 */
+            padding: 20px;
+            font-family: 'Malgun Gothic', sans-serif;
+            transition: scroll-top 0.1s ease-out; /* 스크롤 동기화를 부드럽게 */
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            padding: 15px;
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            z-index: 1000;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button id="playAudio">🔊 오디오 재생 및 동기화</button>
+        <p>상태: <span id="syncStatus" style="font-weight: bold;">연결 중...</span></p>
+    </div>
+
+    <h1>영어 인토네이션 연습 자료</h1>
+    <p>이 페이지를 친구와 공유하고, 한 명이 스크롤하거나 재생 버튼을 누르면 다른 사람에게도 동기화됩니다.</p>
+    
+    <h2 style="margin-top: 100px;">섹션 1: 하강조(Falling Tone)</h2>
+    <p>평서문, Wh-질문(What, Where 등), 명령문</p>
+    <div style="height: 800px; background-color: #e0f7fa;"></div>
+
+    <h2 style="margin-top: 500px;">섹션 2: 상승조(Rising Tone)</h2>
+    <p>Yes/No 질문</p>
+    <div style="height: 800px; background-color: #e8f5e9;"></div>
+
+    <audio id="practiceAudio" src="audio.mp3" preload="auto"></audio>
+
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script>
+		// Your web app's Firebase configuration
+		// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+		const firebaseConfig = {
+		  apiKey: "AIzaSyBbYOYs8vUUij8GFKWBzJ0UKt1tmi1E1yU",
+		  authDomain: "ealtutoring.firebaseapp.com",
+		  databaseURL: "https://ealtutoring-default-rtdb.firebaseio.com",
+		  projectId: "ealtutoring",
+		  storageBucket: "ealtutoring.firebasestorage.app",
+		  messagingSenderId: "559694690544",
+		  appId: "1:559694690544:web:e9996582840c22baeaea35",
+		  measurementId: "G-DR02FCCDK9"
+		};
+
+        // Firebase 초기화
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+    </script>
+    
+    <script src="script.js"></script>
+</body>
+</html>
