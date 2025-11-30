@@ -336,7 +336,9 @@
 				syncTimestamps(action.timestamps);
 			}
 			else if (action.type === 'save') syncTimestamps(action.timestamps);
-		});
+		}, (error) => {
+        	console.error("실시간 동기화 오류:", error);
+    	});
     </script>
 </body>
 </html>
