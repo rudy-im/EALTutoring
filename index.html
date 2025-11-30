@@ -339,12 +339,12 @@
 				return;
 			}
 			if (action.type === 'play') {
-				audioPlayer.play();
-				//syncPlay(action);
+				//audioPlayer.play();
+				syncPlay(action);
 			}
 			else if (action.type === 'pause'){
-				audioPlayer.pause();
-				//syncPause();
+				//audioPlayer.pause();
+				syncPause();
 			}
 			else if (action.type === 'load'){
 				syncFile(action.audioId);
