@@ -1,1 +1,1 @@
-Firebase 사용 중. 비공개 유지할 것.
+Firebase 사용 중. 룰 관리 요망.
