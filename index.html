@@ -323,18 +323,9 @@
 		// 파이어베이스가 업데이트 될 때마다 호출
 		firebaseRef.child('action').on('value', (snapshot) => {
 			const action = snapshot.val();
-			if (action.type === 'play') {
-				//audioPlayer.play();
-				syncPlay(action);
-			}
-			else if (action.type === 'pause'){
-				//audioPlayer.pause();
-				syncPause();
-			}
-			else if (action.type === 'load'){
-				syncFile(action.audioId);
-				syncTimestamps(action.timestamps);
-			}
+			if (action.type === 'play') syncPlay(action);
+			else if (action.type === 'pause') syncPause();
+			else if (action.type === 'load') syncFile(action.audioId);
 			else if (action.type === 'save') syncTimestamps(action.timestamps);
 		}, (error) => {
         	console.error("실시간 동기화 오류:", error);
