@@ -42,8 +42,8 @@
             <h2><span id="current-audio-title"></span></h2>
             <audio id="audioPlayer" controls preload="auto"></audio>
             <div id="controls">
-				<button id="playBtn" disabled>Play</button>
-                <button id="pauseBtn" disabled>Pause</button>
+				<button id="playBtn">Play</button>
+                <button id="pauseBtn">Pause</button>
             </div>
         </div>
 
@@ -100,7 +100,7 @@
         ];
 		
 		function saveTimestamps(){
-			firebaseRef.child(currentAudioId).set(JSON.stringify(currentTimestamps));
+			firebaseRef.child(currentAudioId).set(currentTimestamps);
 			const action = {
 				type: "save",
 				timestamps: currentTimestamps
@@ -141,8 +141,10 @@
                 const li = document.createElement('li');
                 li.dataset.id = file.id;
                 li.textContent = file.title;
-                li.addEventListener('click', () => selectAudio(file));
-				li.addEventListener('click', () => loadNotice());
+                li.addEventListener('click', () => {
+					selectAudio(file);
+					loadNotice();
+				});
                 audioList.appendChild(li);
             });
         }
