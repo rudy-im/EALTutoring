@@ -42,7 +42,8 @@
             <h2><span id="current-audio-title"></span></h2>
             <audio id="audioPlayer" controls preload="auto"></audio>
             <div id="controls">
-                <button id="recordTimestampBtn" disabled>Record Timestamp (Spacebar)</button>
+				<button id="playBtn" disabled>Play</button>
+                <button id="pauseBtn" disabled>Pause</button>
             </div>
         </div>
 
@@ -80,7 +81,8 @@
 		const firebaseRef = database.ref('eal_tutoring');
 
         const audioPlayer = document.getElementById('audioPlayer');
-        const recordTimestampBtn = document.getElementById('recordTimestampBtn');
+		const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
         const timestampList = document.getElementById('timestamp-list');
         const audioList = document.getElementById('audio-list');
         const currentAudioTitle = document.getElementById('current-audio-title');
@@ -90,8 +92,6 @@
         let currentAudioSrc = '';
         let currentTimestamps = []; // 현재 오디오 파일의 타임스탬프를 저장할 배열
 		
-		let sync = false;
-
         // 오디오 파일 목록
         const audioFiles = [
             { id: 'audio1', title: '강의 녹음 1', src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
@@ -100,7 +100,6 @@
         ];
 		
 		function saveTimestamps(){
-			sync = true;
 			firebaseRef.child(currentAudioId).set(JSON.stringify(currentTimestamps));
 			const action = {
 				type: "save",
@@ -110,12 +109,27 @@
 		}
 		
 		function loadNotice(){
-			sync = true;
 			firebaseRef.child("audioId").set(currentAudioId);
 			const action = {
 				type: "load",
 				audioId: currentAudioId,
 				timestamps: currentTimestamps
+			}
+			firebaseRef.child("action").set(action);
+		}
+
+		function play(){
+			const action = {
+				type: "play",
+				startTime: audioPlayer.currentTime,
+				endTime: segmentEndTime
+			}
+			firebaseRef.child("action").set(action);
+		}
+
+		function pause(){
+			const action = {
+				type: "pause"
 			}
 			firebaseRef.child("action").set(action);
 		}
@@ -128,6 +142,7 @@
                 li.dataset.id = file.id;
                 li.textContent = file.title;
                 li.addEventListener('click', () => selectAudio(file));
+				li.addEventListener('click', () => loadNotice());
                 audioList.appendChild(li);
             });
         }
@@ -155,8 +170,6 @@
             currentAudioTitle.textContent = file.title;
             audioPlayer.src = currentAudioSrc;
             audioPlayer.load(); // 오디오 로드
-			
-			if(!sync) loadNotice();
 
             // 이전에 저장된 타임스탬프 불러오기
             //const storedTimestamps = localStorage.getItem(`timestamps_${currentAudioSrc}`);
@@ -230,7 +243,7 @@
 
             audioPlayer.currentTime = startTime;
 			segmentEndTime = endTime;
-            audioPlayer.play();
+            play();
         }
         
 		audioPlayer.addEventListener('timeupdate', () => {
@@ -246,35 +259,14 @@
         audioPlayer.addEventListener('ended', () => {
             clearTimeout(segmentTimeout);
         });
-		
-		audioPlayer.addEventListener('play', () => {
-			if (sync){
-				return;
-			}
-			sync = true;
-			const action = {
-				type: "play",
-				startTime: audioPlayer.currentTime,
-				endTime: segmentEndTime
-			}
-			firebaseRef.child("action").set(action);
-		});
-		
-		audioPlayer.addEventListener('pause', () => {
-			if (sync){
-				return;
-			}
-			sync = true;
-			const action = {
-				type: "pause"
-			}
-			firebaseRef.child("action").set(action);
-		});
 
-        // 타임스탬프 기록
-        recordTimestampBtn.addEventListener('click', () => {
+        playBtn.addEventListener('click', () => {
+			play();
+        });
+		
+        pauseBtn.addEventListener('click', () => {
             addTimestamp(audioPlayer.currentTime);
-			audioPlayer.pause();
+			pause();
         });
 		
         // 스페이스바 이벤트 리스너
@@ -285,10 +277,10 @@
             } else if (e.code === 'Space' && currentAudioSrc) {
                 e.preventDefault(); // 스페이스바의 기본 동작 방지 (재생/일시정지)
                 if (audioPlayer.paused) {
-                    audioPlayer.play();
+                    play();
                 } else {
 					addTimestamp(audioPlayer.currentTime);
-					audioPlayer.pause();
+					pause();
                 }
             }
         });
@@ -334,10 +326,6 @@
 		// 파이어베이스가 업데이트 될 때마다 호출
 		firebaseRef.child('action').on('value', (snapshot) => {
 			const action = snapshot.val();
-			if (sync){
-				sync = false;
-				return;
-			}
 			if (action.type === 'play') {
 				//audioPlayer.play();
 				syncPlay(action);
