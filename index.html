@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -102,7 +102,8 @@
 		function saveTimestamps(){
 			firebaseRef.child(currentAudioId).set(JSON.stringify(currentTimestamps));
 			const action = {
-				type: "save"
+				type: "save",
+				timestamps: currentTimestamps
 			}
 			firebaseRef.child("action").set(JSON.stringify(action));
 		}
@@ -110,7 +111,9 @@
 		function loadNotice(){
 			firebaseRef.child("audioId").set(currentAudioId);
 			const action = {
-				type: "load"
+				type: "load",
+				audioId: currentAudioId,
+				timestamps: currentTimestamps
 			}
 			firebaseRef.child("action").set(JSON.stringify(action));
 		}
@@ -300,14 +303,13 @@
 			audioPlayer.pause();
 		}
 		
-		function syncTimestamps(data){
-			currentTimestamps = data[currentAudioId];
+		function syncTimestamps(timestamps){
+			currentTimestamps = timestamps;
 		}
 		
-		function syncFile(data){
-			currentAudioId = data.audioId;
+		function syncFile(id){
 			for (const file of audioFiles) {
-				if (file.id != currentAudioId) continue;
+				if (file.id != id) continue;
 				selectAudio(file);
 				break;
 			}
@@ -320,8 +322,8 @@
 		// 초기화
 		firebaseRef.once('value').then((snapshot) => {
 			const data = snapshot.val();
-			syncFile(data);
-			syncTimestamps(data);
+			syncFile(data.audioId);
+			syncTimestamps(data[data.audioId]);
 		});
 		
 		// 파이어베이스가 업데이트 될 때마다 호출
@@ -329,13 +331,11 @@
 			const action = snapshot.val();
 			if (action.type === 'play') syncPlay(action);
 			else if (action.type === 'pause') syncPause();
-			else if (action.type === 'save' || action.type === 'load'){
-				firebaseRef.once('value').then((snapshot) => {
-					const data = snapshot.val();
-					if (action.type === 'load') syncFile(data);
-					syncTimestamps(data);
-				});
+			else if (action.type === 'load'){
+				syncFile(action.audioId);
+				syncTimestamps(action.timestamps);
 			}
+			else if (action.type === 'save') syncTimestamps(action.timestamps);
 		});
     </script>
 </body>
