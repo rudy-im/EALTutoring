@@ -176,8 +176,8 @@
             //const storedTimestamps = localStorage.getItem(`timestamps_${currentAudioSrc}`);
 			firebaseRef.once('value').then((snapshot) => {
 				const data = snapshot.val();
+				console.log(data)
 				const storedTimestamps = data ? data[currentAudioId] : null;
-				console.log(storedTimestamps)
 				currentTimestamps = storedTimestamps ? JSON.parse(storedTimestamps) : [];
 				segmentEndTime = currentTimestamps ? (currentTimestamps[0] ? currentTimestamps[0] : -1) : -1;
 				renderTimestamps();
