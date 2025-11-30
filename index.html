@@ -177,10 +177,9 @@
 				const data = snapshot.val();
 				console.log(data);
 				const storedTimestamps = data ? data[currentAudioId] : null;
-				currentTimestamps = storedTimestamps ? JSON.parse(storedTimestamps) : [];
+				currentTimestamps = storedTimestamps ? storedTimestamps : [];
 				segmentEndTime = currentTimestamps ? (currentTimestamps[0] ? currentTimestamps[0] : -1) : -1;
 				renderTimestamps();
-				recordTimestampBtn.disabled = false; // 오디오 선택 시 타임스탬프 버튼 활성화
 			});
         }
 
@@ -315,12 +314,10 @@
 		firebaseRef.once('value').then((snapshot) => {
 			const data = snapshot.val();
 			if (!data.audioId) {
-				recordTimestampBtn.disabled = true;
 				return;
 			}
 			syncFile(data.audioId);
 			syncTimestamps(data[data.audioId]);
-			recordTimestampBtn.disabled = false;
 		});
 		
 		// 파이어베이스가 업데이트 될 때마다 호출
