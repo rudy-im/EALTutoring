@@ -154,7 +154,7 @@
             audioPlayer.src = currentAudioSrc;
             audioPlayer.load(); // 오디오 로드
 			
-			loadNotice();
+			if(!sync) loadNotice();
 
             // 이전에 저장된 타임스탬프 불러오기
             //const storedTimestamps = localStorage.getItem(`timestamps_${currentAudioSrc}`);
