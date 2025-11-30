@@ -100,6 +100,7 @@
         ];
 		
 		function saveTimestamps(){
+			sync = true;
 			firebaseRef.child(currentAudioId).set(JSON.stringify(currentTimestamps));
 			const action = {
 				type: "save",
@@ -109,6 +110,7 @@
 		}
 		
 		function loadNotice(){
+			sync = true;
 			firebaseRef.child("audioId").set(currentAudioId);
 			const action = {
 				type: "load",
