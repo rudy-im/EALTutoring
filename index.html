@@ -318,13 +318,17 @@
 
         // 초기 렌더링
         renderAudioList();
-        recordTimestampBtn.disabled = true; // 초기에는 오디오가 선택되지 않았으므로 비활성화
-		
+
 		// 초기화
 		firebaseRef.once('value').then((snapshot) => {
 			const data = snapshot.val();
+			if (!data.audioId) {
+				recordTimestampBtn.disabled = true;
+				return;
+			}
 			syncFile(data.audioId);
 			syncTimestamps(data[data.audioId]);
+			recordTimestampBtn.disabled = false;
 		});
 		
 		// 파이어베이스가 업데이트 될 때마다 호출
