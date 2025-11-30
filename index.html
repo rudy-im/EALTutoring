@@ -105,7 +105,7 @@
 				type: "save",
 				timestamps: currentTimestamps
 			}
-			firebaseRef.child("action").set(JSON.stringify(action));
+			firebaseRef.child("action").set(action);
 		}
 		
 		function loadNotice(){
@@ -115,7 +115,7 @@
 				audioId: currentAudioId,
 				timestamps: currentTimestamps
 			}
-			firebaseRef.child("action").set(JSON.stringify(action));
+			firebaseRef.child("action").set(action);
 		}
 
         // 오디오 목록 렌더링
@@ -137,7 +137,7 @@
             // 이전에 선택된 오디오의 타임스탬프 저장
             if (currentAudioSrc) {
                 //localStorage.setItem(`timestamps_${currentAudioSrc}`, JSON.stringify(currentTimestamps));
-				firebaseRef.child(currentAudioId).set(JSON.stringify(currentTimestamps));
+				firebaseRef.child(currentAudioId).set(currentTimestamps);
             }
 
             // 선택된 오디오 표시
@@ -255,7 +255,7 @@
 				startTime: audioPlayer.currentTime,
 				endTime: segmentEndTime
 			}
-			firebaseRef.child("action").set(JSON.stringify(action));
+			firebaseRef.child("action").set(action);
 		});
 		
 		audioPlayer.addEventListener('pause', () => {
@@ -266,7 +266,7 @@
 			const action = {
 				type: "pause"
 			}
-			firebaseRef.child("action").set(JSON.stringify(action));
+			firebaseRef.child("action").set(action);
 		});
 
         // 타임스탬프 기록
