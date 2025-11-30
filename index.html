@@ -100,10 +100,10 @@
         ];
 		
 		function saveTimestamps(){
-			firebaseRef.child(currentAudioId).set(currentTimestamps);
+			firebaseRef.child(currentAudioId).set(JSON.stringify(currentTimestamps));
 			const action = {
 				type: "save",
-				timestamps: currentTimestamps
+				timestamps: JSON.stringify(currentTimestamps)
 			}
 			firebaseRef.child("action").set(action);
 		}
@@ -155,7 +155,7 @@
             // 이전에 선택된 오디오의 타임스탬프 저장
             if (currentAudioSrc) {
                 //localStorage.setItem(`timestamps_${currentAudioSrc}`, JSON.stringify(currentTimestamps));
-				firebaseRef.child(currentAudioId).set(currentTimestamps);
+				firebaseRef.child(currentAudioId).set(JSON.stringify(currentTimestamps));
             }
 
             // 선택된 오디오 표시
@@ -178,7 +178,7 @@
 				const data = snapshot.val();
 				const storedTimestamps = data ? data[currentAudioId] : null;
 				console.log(storedTimestamps)
-				currentTimestamps = storedTimestamps ? storedTimestamps : [];
+				currentTimestamps = storedTimestamps ? JSON.parse(storedTimestamps) : [];
 				segmentEndTime = currentTimestamps ? (currentTimestamps[0] ? currentTimestamps[0] : -1) : -1;
 				renderTimestamps();
 			});
@@ -296,7 +296,7 @@
 		}
 		
 		function syncTimestamps(timestamps){
-			currentTimestamps = timestamps;
+			currentTimestamps = JSON.parse(timestamps);
 			renderTimestamps()
 		}
 		
