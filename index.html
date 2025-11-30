@@ -247,7 +247,6 @@
 		
 		audioPlayer.addEventListener('play', () => {
 			if (sync){
-				sync = false;
 				return;
 			}
 			sync = true;
@@ -261,7 +260,6 @@
 		
 		audioPlayer.addEventListener('pause', () => {
 			if (sync){
-				sync = false;
 				return;
 			}
 			sync = true;
