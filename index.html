@@ -109,7 +109,6 @@
 		}
 		
 		function loadNotice(){
-			firebaseRef.child("audioId").set(currentAudioId);
 			const action = {
 				type: "load",
 				audioId: currentAudioId
