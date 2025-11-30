@@ -171,13 +171,13 @@
             currentAudioTitle.textContent = file.title;
             audioPlayer.src = currentAudioSrc;
             audioPlayer.load(); // 오디오 로드
-			currentTimestamps = [];
-
+			
             // 이전에 저장된 타임스탬프 불러오기
             //const storedTimestamps = localStorage.getItem(`timestamps_${currentAudioSrc}`);
 			firebaseRef.once('value').then((snapshot) => {
 				const data = snapshot.val();
 				const storedTimestamps = data ? data[currentAudioId] : null;
+				console.log(storedTimestamps)
 				currentTimestamps = storedTimestamps ? storedTimestamps : [];
 				segmentEndTime = currentTimestamps ? (currentTimestamps[0] ? currentTimestamps[0] : -1) : -1;
 				renderTimestamps();
