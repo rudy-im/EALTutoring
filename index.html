@@ -2,54 +2,58 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>실시간 영어 억양 연습 동기화</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EAL Tutoring</title>
     <style>
-        body {
-            height: 300vh; /* 긴 스크롤 페이지를 만들기 위함 */
-            padding: 20px;
-            font-family: 'Malgun Gothic', sans-serif;
-            transition: scroll-top 0.1s ease-out; /* 스크롤 동기화를 부드럽게 */
-        }
-        #controls {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            padding: 15px;
-            background: #f8f8f8;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            z-index: 1000;
-        }
-        button {
-            padding: 10px 15px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+        body { font-family: Arial, sans-serif; display: flex; height: 100vh; margin: 0; background-color: #f4f4f4; }
+        #left-panel { width: 250px; background-color: #333; color: white; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        #left-panel h3 { margin-top: 0; color: #61dafb; }
+        #audio-list ul { list-style: none; padding: 0; }
+        #audio-list li { padding: 10px; cursor: pointer; border-bottom: 1px solid #555; transition: background-color 0.2s; }
+        #audio-list li:hover { background-color: #555; }
+        #audio-list li.selected { background-color: #61dafb; color: #333; font-weight: bold; }
+
+        #main-content { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #audio-player-container { text-align: center; margin-bottom: 30px; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 80%; max-width: 800px; }
+        audio { width: 100%; margin-top: 10px; }
+        #controls { margin-top: 15px; }
+        #controls button { padding: 10px 20px; font-size: 1em; margin: 0 5px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; transition: background-color 0.2s; }
+        #controls button:hover { background-color: #0056b3; }
+        #controls button:disabled { background-color: #cccccc; cursor: not-allowed; }
+
+        #timestamp-container { width: 80%; max-width: 800px; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow-y: auto; max-height: 400px; }
+        #timestamp-list { list-style: none; padding: 0; }
+        #timestamp-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+        #timestamp-list li span { cursor: pointer; color: #007bff; transition: color 0.2s; }
+        #timestamp-list li span:hover { color: #0056b3; text-decoration: underline; }
+        #timestamp-list li button.delete-btn { background-color: #dc3545; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; font-size: 0.8em; transition: background-color 0.2s; }
+        #timestamp-list li button.delete-btn:hover { background-color: #c82333; }
     </style>
 </head>
 <body>
-    <div id="controls">
-        <button id="playAudio">🔊 오디오 재생 및 동기화</button>
-        <p>상태: <span id="syncStatus" style="font-weight: bold;">연결 중...</span></p>
+    <div id="left-panel">
+        <h3>Audio Files</h3>
+        <ul id="audio-list">
+            </ul>
     </div>
 
-    <h1>영어 인토네이션 연습 자료</h1>
-    <p>이 페이지를 친구와 공유하고, 한 명이 스크롤하거나 재생 버튼을 누르면 다른 사람에게도 동기화됩니다.</p>
-    
-    <h2 style="margin-top: 100px;">섹션 1: 하강조(Falling Tone)</h2>
-    <p>평서문, Wh-질문(What, Where 등), 명령문</p>
-    <div style="height: 800px; background-color: #e0f7fa;"></div>
+    <div id="main-content">
+        <div id="audio-player-container">
+            <h2><span id="current-audio-title"></span></h2>
+            <audio id="audioPlayer" controls preload="auto"></audio>
+            <div id="controls">
+                <button id="recordTimestampBtn" disabled>Record Timestamp (Spacebar)</button>
+            </div>
+        </div>
 
-    <h2 style="margin-top: 500px;">섹션 2: 상승조(Rising Tone)</h2>
-    <p>Yes/No 질문</p>
-    <div style="height: 800px; background-color: #e8f5e9;"></div>
+        <div id="timestamp-container">
+            <h3>Timestamps</h3>
+            <ul id="timestamp-list">
+                </ul>
+        </div>
+    </div>
 
-    <audio id="practiceAudio" src="audio.mp3" preload="auto"></audio>
-
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <script>
 		// Your web app's Firebase configuration
@@ -70,7 +74,269 @@
             firebase.initializeApp(firebaseConfig);
         }
     </script>
-    
-    <script src="script.js"></script>
+    <script>
+		// Firebase Realtime Database 참조
+		const database = firebase.database();
+		const firebaseRef = database.ref('eal_tutoring');
+
+        const audioPlayer = document.getElementById('audioPlayer');
+        const recordTimestampBtn = document.getElementById('recordTimestampBtn');
+        const timestampList = document.getElementById('timestamp-list');
+        const audioList = document.getElementById('audio-list');
+        const currentAudioTitle = document.getElementById('current-audio-title');
+		let segmentEndTime = -1
+		
+		let currentAudioId = '';
+        let currentAudioSrc = '';
+        let currentTimestamps = []; // 현재 오디오 파일의 타임스탬프를 저장할 배열
+		
+		let sync = false;
+
+        // 오디오 파일 목록
+        const audioFiles = [
+            { id: 'audio1', title: '강의 녹음 1', src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
+            { id: 'audio2', title: '회의록 2', src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
+            { id: 'audio3', title: '인터뷰 3', src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' }
+        ];
+		
+		function saveTimestamps(){
+			firebaseRef.child(currentAudioId).set(JSON.stringify(currentTimestamps));
+			const action = {
+				type: "save"
+			}
+			firebaseRef.child("action").set(JSON.stringify(action));
+		}
+		
+		function loadNotice(){
+			firebaseRef.child("audioId").set(currentAudioId);
+			const action = {
+				type: "load"
+			}
+			firebaseRef.child("action").set(JSON.stringify(action));
+		}
+
+        // 오디오 목록 렌더링
+        function renderAudioList() {
+            audioList.innerHTML = '';
+            audioFiles.forEach(file => {
+                const li = document.createElement('li');
+                li.dataset.id = file.id;
+                li.textContent = file.title;
+                li.addEventListener('click', () => selectAudio(file));
+                audioList.appendChild(li);
+            });
+        }
+		
+        // 오디오 선택 및 로드
+        function selectAudio(file) {
+			segmentEndTime = -1
+			
+            // 이전에 선택된 오디오의 타임스탬프 저장
+            if (currentAudioSrc) {
+                //localStorage.setItem(`timestamps_${currentAudioSrc}`, JSON.stringify(currentTimestamps));
+				firebaseRef.child(currentAudioId).set(JSON.stringify(currentTimestamps));
+            }
+
+            // 선택된 오디오 표시
+            document.querySelectorAll('#audio-list li').forEach(item => {
+                item.classList.remove('selected');
+                if (item.dataset.id === file.id) {
+                    item.classList.add('selected');
+                }
+            });
+
+			currentAudioId = file.id;
+            currentAudioSrc = file.src;
+            currentAudioTitle.textContent = file.title;
+            audioPlayer.src = currentAudioSrc;
+            audioPlayer.load(); // 오디오 로드
+			
+			loadNotice();
+
+            // 이전에 저장된 타임스탬프 불러오기
+            //const storedTimestamps = localStorage.getItem(`timestamps_${currentAudioSrc}`);
+			firebaseRef.once('value').then((snapshot) => {
+				const data = snapshot.val();
+				console.log(data);
+				const storedTimestamps = data ? data[currentAudioId] : null;
+				currentTimestamps = storedTimestamps ? JSON.parse(storedTimestamps) : [];
+				segmentEndTime = currentTimestamps ? (currentTimestamps[0] ? currentTimestamps[0] : -1) : -1;
+				renderTimestamps();
+				recordTimestampBtn.disabled = false; // 오디오 선택 시 타임스탬프 버튼 활성화
+			});
+        }
+
+        // 시간 포맷팅 (HH:MM:SS)
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return [h, m, s]
+                .map(v => v < 10 ? '0' + v : v)
+                .filter((v, i) => v !== '00' || i > 0 || h > 0) // 시간 부분이 00이면 숨김 (h가 0일 경우)
+                .join(':');
+        }
+		
+        // 타임스탬프 추가 함수
+        function addTimestamp(time) {
+            currentTimestamps.push(time);
+            currentTimestamps.sort((a, b) => a - b); // 시간 순서대로 정렬
+            renderTimestamps();
+            //localStorage.setItem(`timestamps_${currentAudioSrc}`, JSON.stringify(currentTimestamps));
+			saveTimestamps();
+        }
+		
+		// 타임스탬프 삭제
+        function deleteTimestamp(index) {
+            currentTimestamps.splice(index, 1);
+            renderTimestamps();
+            //localStorage.setItem(`timestamps_${currentAudioSrc}`, JSON.stringify(currentTimestamps));
+			saveTimestamps();
+        }
+
+        // 타임스탬프 렌더링
+        function renderTimestamps() {
+            timestampList.innerHTML = '';
+            currentTimestamps.forEach((ts, index) => {
+                const li = document.createElement('li');
+                const timeSpan = document.createElement('span');
+                timeSpan.textContent = formatTime(ts);
+                timeSpan.dataset.time = ts;
+                timeSpan.addEventListener('click', () => playSegment(index));
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'X';
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.addEventListener('click', () => deleteTimestamp(index));
+
+                li.appendChild(timeSpan);
+                li.appendChild(deleteBtn);
+                timestampList.appendChild(li);
+            });
+        }
+
+        // 타임스탬프 구간 재생
+        let segmentTimeout; // 구간 재생을 멈추기 위한 타이머
+        function playSegment(index) {
+            clearTimeout(segmentTimeout); // 이전 구간 재생 타이머 중지
+
+            const startTime = currentTimestamps[index];
+            const endTime = currentTimestamps[index + 1] ? currentTimestamps[index + 1] : audioPlayer.duration;
+
+            audioPlayer.currentTime = startTime;
+			segmentEndTime = endTime;
+            audioPlayer.play();
+        }
+        
+		audioPlayer.addEventListener('timeupdate', () => {
+            if (segmentEndTime !== -1 && audioPlayer.currentTime >= segmentEndTime) {
+                audioPlayer.pause();
+				const nextGreater = currentTimestamps.find(ts => ts > segmentEndTime);
+				if (nextGreater) segmentEndTime = nextGreater;
+				else segmentEndTime = -1;
+            }
+        });
+		
+        // 오디오가 끝났을 때 구간 재생 타이머 초기화
+        audioPlayer.addEventListener('ended', () => {
+            clearTimeout(segmentTimeout);
+        });
+		
+		audioPlayer.addEventListener('play', () => {
+			if (sync){
+				sync = false;
+				return;
+			}
+			const action = {
+				type: "play",
+				startTime: audioPlayer.currentTime,
+				endTime: segmentEndTime
+			}
+			firebaseRef.child("action").set(JSON.stringify(action));
+		});
+		
+		audioPlayer.addEventListener('pause', () => {
+			if (sync){
+				sync = false;
+				return;
+			}
+			const action = {
+				type: "pause"
+			}
+			firebaseRef.child("action").set(JSON.stringify(action));
+		});
+
+        // 타임스탬프 기록
+        recordTimestampBtn.addEventListener('click', () => {
+            addTimestamp(audioPlayer.currentTime);
+			audioPlayer.pause();
+        });
+		
+        // 스페이스바 이벤트 리스너
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !audioPlayer.paused && currentAudioSrc) {
+                e.preventDefault(); // 스페이스바의 기본 동작(스크롤 등) 방지
+                addTimestamp(audioPlayer.currentTime);
+            } else if (e.code === 'Space' && currentAudioSrc) {
+                e.preventDefault(); // 스페이스바의 기본 동작 방지 (재생/일시정지)
+                if (audioPlayer.paused) {
+                    audioPlayer.play();
+                } else {
+					addTimestamp(audioPlayer.currentTime);
+					audioPlayer.pause();
+                }
+            }
+        });
+		
+		function syncPlay(action){
+			sync = true;
+			audioPlayer.currentTime = action.startTime;
+			segmentEndTime = action.endTime;
+            audioPlayer.play();
+		}
+		
+		function syncPause(){
+			sync = true;
+			audioPlayer.pause();
+		}
+		
+		function syncTimestamps(data){
+			currentTimestamps = data[currentAudioId];
+		}
+		
+		function syncFile(data){
+			currentAudioId = data.audioId;
+			for (const file of audioFiles) {
+				if (file.id != currentAudioId) continue;
+				selectAudio(file);
+				break;
+			}
+		}
+
+        // 초기 렌더링
+        renderAudioList();
+        recordTimestampBtn.disabled = true; // 초기에는 오디오가 선택되지 않았으므로 비활성화
+		
+		// 초기화
+		firebaseRef.once('value').then((snapshot) => {
+			const data = snapshot.val();
+			syncFile(data);
+			syncTimestamps(data);
+		});
+		
+		// 파이어베이스가 업데이트 될 때마다 호출
+		firebaseRef.child('action').on('value', (snapshot) => {
+			const action = snapshot.val();
+			if (action.type === 'play') syncPlay(action);
+			else if (action.type === 'pause') syncPause();
+			else if (action.type === 'save' || action.type === 'load'){
+				firebaseRef.once('value').then((snapshot) => {
+					const data = snapshot.val();
+					if (action.type === 'load') syncFile(data);
+					syncTimestamps(data);
+				});
+			}
+		});
+    </script>
 </body>
 </html>
