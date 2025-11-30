@@ -149,15 +149,7 @@
 		
         // 오디오 선택 및 로드
         function selectAudio(file) {
-			segmentEndTime = -1
-			
-            // 이전에 선택된 오디오의 타임스탬프 저장
-            if (currentAudioSrc) {
-                //localStorage.setItem(`timestamps_${currentAudioSrc}`, JSON.stringify(currentTimestamps));
-				firebaseRef.child(currentAudioId).set(JSON.stringify(currentTimestamps));
-            }
-
-            // 선택된 오디오 표시
+			// 선택된 오디오 표시
             document.querySelectorAll('#audio-list li').forEach(item => {
                 item.classList.remove('selected');
                 if (item.dataset.id === file.id) {
@@ -165,6 +157,7 @@
                 }
             });
 
+			segmentEndTime = -1
 			currentAudioId = file.id;
             currentAudioSrc = file.src;
             currentAudioTitle.textContent = file.title;
