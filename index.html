@@ -112,10 +112,10 @@
             { id: 'audio2', title: 'Portlandia', src: 'audios/Portlandia.mp3' },
             { id: 'audio3', title: 'Allegiance', src: 'audios/Allegiance.mp3' },
 			{ id: 'audio4', title: 'Baroness Von Sketch', src: 'audios/Baroness Von Sketch.mp3' },
+            { id: 'audio5', title: 'Plan B', src: 'audios/Plan B.mp3' },
+            { id: 'audio6', title: 'Still Standing', src: 'audios/Still Standing.mp3' },
+			{ id: 'audio7', title: 'Macy Murdoch', src: 'audios/Macy Murdoch.mp3' },
 			/*
-            { id: 'audio5', title: 'Kim\'s Convenience 2', src: 'audios/Kim\'s Convenience 2.mp3' },
-            { id: 'audio6', title: 'Kim\'s Convenience 3', src: 'audios/Kim\'s Convenience 3.mp3' },
-			{ id: 'audio7', title: 'Heartland 1', src: 'audios/Heartland 1.mp3' },
             { id: 'audio8', title: 'Heartland 2', src: 'audios/Heartland 2.mp3' },
             { id: 'audio9', title: 'Heartland 3', src: 'audios/Heartland 3.mp3' },
 			{ id: 'audio10', title: 'Schitt\'s Creek 1', src: 'audios/Schitt\'s Creek 1.mp3' },
@@ -361,7 +361,7 @@
         });
 		
         pauseBtn.addEventListener('click', () => {
-            addTimestamp(audioPlayer.currentTime);
+            if(editCheckbox.checked) addTimestamp(audioPlayer.currentTime);
 			pause();
         });
 		
