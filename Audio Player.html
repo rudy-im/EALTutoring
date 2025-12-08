@@ -131,6 +131,7 @@
 				audioId: currentAudioId
 			}
 			firebaseRef.child("action").set(action);
+			firebaseRef.child("audioId").set(currentAudioId);
 		}
 
 		function play(){

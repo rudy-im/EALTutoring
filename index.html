@@ -130,10 +130,21 @@
         ];
 		
 		function saveTimestamps(){
-			firebaseRef.child(currentAudioId).set(JSON.stringify(currentTimestamps));
+			firebaseRef.child(currentAudioId).set(currentTimestamps);
 			const action = {
 				type: "save",
-				timestamps: JSON.stringify(currentTimestamps)
+				timestamps: currentTimestamps
+			}
+			firebaseRef.child("action").set(action);
+		}
+		
+		function syncPartialTimestamp(index, attr, value){
+			firebaseRef.child(currentAudioId).child(index.toString()).child(attr).set(value);
+			const action = {
+				type: "sync",
+				index: index,
+				attr: attr,
+				value: value
 			}
 			firebaseRef.child("action").set(action);
 		}
@@ -144,6 +155,7 @@
 				audioId: currentAudioId
 			}
 			firebaseRef.child("action").set(action);
+			firebaseRef.child("audioId").set(currentAudioId);
 		}
 
 		function play(){
@@ -195,13 +207,11 @@
             audioPlayer.load(); // 오디오 로드
 			
             // 이전에 저장된 타임스탬프 불러오기
-            //const storedTimestamps = localStorage.getItem(`timestamps_${currentAudioSrc}`);
 			firebaseRef.once('value').then((snapshot) => {
 				const data = snapshot.val();
-				console.log(data)
 				const storedTimestamps = data ? data[currentAudioId] : null;
-				currentTimestamps = storedTimestamps ? JSON.parse(storedTimestamps) : [];
-				segmentEndTime = currentTimestamps ? (currentTimestamps[0] ? currentTimestamps[0] : -1) : -1;
+				currentTimestamps = storedTimestamps ? storedTimestamps : [];
+				segmentEndTime = currentTimestamps ? (currentTimestamps[0] ? currentTimestamps[0].time : -1) : -1;
 				renderTimestamps();
 			});
         }
@@ -227,7 +237,6 @@
             currentTimestamps.push(timestamp);
             currentTimestamps.sort((a, b) => a.time - b.time); // 시간 순서대로 정렬
             renderTimestamps();
-            //localStorage.setItem(`timestamps_${currentAudioSrc}`, JSON.stringify(currentTimestamps));
 			saveTimestamps();
         }
 		
@@ -235,7 +244,6 @@
         function deleteTimestamp(index) {
             currentTimestamps.splice(index, 1);
             renderTimestamps();
-            //localStorage.setItem(`timestamps_${currentAudioSrc}`, JSON.stringify(currentTimestamps));
 			saveTimestamps();
         }
 		
@@ -245,6 +253,7 @@
 		}
 		
 		function saveScriptChanges(index, script){
+			currentTimestamps[index].script = script;
 		}
 
         // 타임스탬프 렌더링
@@ -273,24 +282,34 @@
 					});
 				} else {
 					scriptElement = document.createElement('div');
-					scriptElement.textContent = scriptText;
+					scriptElement.textContent = ts.script;
 					scriptElement.classList.add('script-display');
 				}
 				
-				if (!ts.isScriptVisible) scriptElement.classList.add('hide');
-				
 				const toggleBtn = document.createElement('button');
 				toggleBtn.classList.add('script-toggle-btn');
-				toggleBtn.classList.add('active');
+				
+				if (!ts.isScriptVisible){
+					scriptElement.classList.add('hide');
+				}
+				else{
+					toggleBtn.classList.add('active');
+				}
+				
 				toggleBtn.addEventListener('click', () => {
 					const isVisible = !scriptElement.classList.contains('hide');
 					if (isVisible) {
 						scriptElement.classList.add('hide');
 						toggleBtn.classList.remove('active'); // 스크립트 숨김 = 눈 감음
+						currentTimestamps[index].isScriptVisible = false;
+						syncPartialTimestamp(index, 'isScriptVisible', false);
 					} else {
 						scriptElement.classList.remove('hide');
 						toggleBtn.classList.add('active'); // 스크립트 표시 = 눈 뜸
+						currentTimestamps[index].isScriptVisible = true;
+						syncPartialTimestamp(index, 'isScriptVisible', true);
 					}
+					
 				});
 
                 const deleteBtn = document.createElement('button');
@@ -307,6 +326,15 @@
 				autoResizeTextarea(scriptElement);
 			});
 		}
+		
+		function playSegment(index) {
+            const startTime = currentTimestamps[index].time;
+            const endTime = currentTimestamps[index + 1] ? currentTimestamps[index + 1].time : -1;
+
+            audioPlayer.currentTime = startTime;
+			segmentEndTime = endTime;
+            play();
+        }
         
 		audioPlayer.addEventListener('timeupdate', () => {
             if (segmentEndTime !== -1 && audioPlayer.currentTime >= segmentEndTime) {
@@ -328,6 +356,7 @@
 		
 		editCheckbox.addEventListener('change', function() {
 			renderTimestamps();
+			if (!this.checked) saveTimestamps();
 		});
 		
         // 스페이스바 이벤트 리스너
@@ -357,7 +386,12 @@
 		}
 		
 		function syncTimestamps(timestamps){
-			currentTimestamps = JSON.parse(timestamps);
+			currentTimestamps = timestamps;
+			renderTimestamps()
+		}
+		
+		function syncTimestamp(index, attr, value){
+			currentTimestamps[index][attr] = value;
 			renderTimestamps()
 		}
 		
@@ -389,6 +423,7 @@
 			else if (action.type === 'pause') syncPause();
 			else if (action.type === 'load') syncFile(action.audioId);
 			else if (action.type === 'save') syncTimestamps(action.timestamps);
+			else if (action.type === 'sync') syncTimestamp(action.index, action.attr, action.value);
 		}, (error) => {
         	console.error("실시간 동기화 오류:", error);
     	});
