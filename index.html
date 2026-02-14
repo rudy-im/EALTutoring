@@ -15,10 +15,16 @@
         .display-box { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e0e0e0; line-height: 1.7; white-space: pre-wrap; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         
         textarea { width: 90%; height: 200px; border: 2px solid var(--primary); border-radius: 12px; padding: 15px; font-size: 1rem; outline: none; }
+		textarea:disabled { border: none !important; }
         
         /* Diff Styles */
         .highlight-del { background-color: var(--del); color: var(--del-text); text-decoration: line-through; padding: 2px 0; }
         .highlight-ins { background-color: var(--ins); border-bottom: 2px solid #2da44e; padding: 2px 0; }
+		
+		// HIW
+		.word { cursor: pointer; user-select: none; padding: 2px 4px; border-radius: 4px; transition: 0.2s; border-bottom: 2px solid transparent; }
+		.word:hover { background-color: #eee; }
+		.word.selected { background-color: #fff59d; border-bottom: 2px solid #ffd600; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -33,7 +39,7 @@
 				<h2>Your Writing</h2>
 				<span id="charCount" style="font-size: 0.9rem; color: #4a90e2; font-weight: bold; margin-bottom: 10px; margin-right: 5%;">0</span>
 			</div>
-            <textarea id="studentInput" oninput="updateWriting()" placeholder="Write here..."></textarea>
+            <textarea id="studentInput" oninput="updateWriting()"></textarea>
         </div>
         <div>
             <h2>Live Feedback</h2>
@@ -63,6 +69,7 @@
 		const firebaseRef = database.ref('eal_tutoring');
 
         let currentWriting = "";
+		let mode = "writing";
 		
 		function countWords(text) {
 			if (!text || text.trim() === "") return 0;
@@ -71,18 +78,81 @@
 		
 		// 지문 업데이트
 		firebaseRef.child('passage').on('value', (snapshot) => {
-			document.getElementById('passageDisplay').innerText = snapshot.val()
+			if (mode === 'fib') {
+				renderFIB(snapshot.val());
+			} else if (mode === 'hiw') {
+				renderHIW(snapshot.val());
+			} else {
+				document.getElementById('passageDisplay').innerText = snapshot.val();
+			}
 		}, (error) => {
         	console.error("실시간 동기화 오류:", error);
     	});
+		
+		function updateFIBInputsFromTutor(text) {
+			const answers = text.split(' | ');
+			
+			answers.forEach((val, i) => {
+				const input = document.getElementById('i' + i);
+				if (input) input.value = val.trim();
+			});
+		}
+		
+		function updateTuteeHighlights(data) {
+			const allWords = document.querySelectorAll('.word');
+			allWords.forEach(word => word.classList.remove('selected'));
+
+			if (data && data.trim() !== "") {
+				const indices = data.split(' | ');
+
+				indices.forEach(idx => {
+					const targetWord = document.getElementById('word-' + idx.trim());
+					if (targetWord) {
+						targetWord.classList.add('selected');
+					}
+				});
+			}
+		}
 		
 		// 피드백 업데이트
 		firebaseRef.child('feedback').on('value', (snapshot) => {
-			showDiff(currentWriting, snapshot.val());
+			const feedback = snapshot.val();
+			if (mode === 'fib') {
+				updateFIBInputsFromTutor(feedback);
+			} else if (mode === 'hiw') {
+				updateTuteeHighlights(feedback);
+			} else {
+				showDiff(currentWriting, feedback);
+			}
 		}, (error) => {
         	console.error("실시간 동기화 오류:", error);
     	});
 		
+		
+		// 모드 업데이트
+		firebaseRef.child('mode').on('value', (snapshot) => {
+			mode = snapshot.val();
+						
+			const studentInput = document.getElementById('studentInput');
+			const feedbackDisplay = document.getElementById('feedbackDisplay');
+			
+			if (mode === 'fib' || mode === 'hiw') {
+				studentInput.placeholder = "-";
+				studentInput.disabled = true;
+				feedbackDisplay.style.visibility = 'hidden';
+			} else {
+				studentInput.placeholder = "Write here...";
+				studentInput.disabled = false;
+				feedbackDisplay.style.visibility = 'visible';
+			}
+			
+			currentWriting = '';
+			document.getElementById('passageDisplay').innerText = '';
+			studentInput.innerText = '';
+			feedbackDisplay.innerHTML = '';
+		}, (error) => {
+        	console.error("실시간 동기화 오류:", error);
+    	});
 
         // 내 작문 DB 전송
         function updateWriting() {
@@ -108,6 +178,80 @@
             });
             document.getElementById('feedbackDisplay').innerHTML = html;
         }
+		
+		function updateFibWriting(totalInputs) {
+			let answers = [];
+			
+			for (let i = 0; i < totalInputs; i++) {
+				const inputElement = document.getElementById('i' + i);
+				if (inputElement) {
+					answers.push(inputElement.value || " "); 
+				}
+			}
+
+			currentWriting = answers.join(' | ');
+			firebaseRef.child("writing").set(currentWriting);
+		}
+		
+		function renderFIB(text) {
+			const container = document.getElementById('passageDisplay');
+			const parts = text.split('[]');
+			container.innerHTML = ''; // 초기화
+
+			parts.forEach((part, i) => {
+				// 텍스트 부분 추가
+				container.appendChild(document.createTextNode(part));
+
+				// 마지막 파트가 아니라면 input 생성
+				if (i < parts.length - 1) {
+					const input = document.createElement('input');
+					input.type = 'text';
+					input.className = 'fib-input';
+					input.id = 'i' + i;
+					
+					input.oninput = () => {
+						updateFibWriting(parts.length - 1);
+					};
+
+					container.appendChild(input);
+				}
+			});
+		}
+		
+		function renderHIW(text) {
+			const container = document.getElementById('passageDisplay');
+			const words = text.split(/(\n|\s+)/); 
+			container.innerHTML = '';
+
+			words.forEach((word, i) => {
+				if (word === '\n') {
+					container.appendChild(document.createElement('br'));
+				} else if (word.trim() === '') {
+					container.appendChild(document.createTextNode(' '));
+				} else {
+					const span = document.createElement('span');
+					span.innerText = word;
+					span.className = 'word';
+					span.id = 'word-' + i;
+
+					span.onclick = () => {
+						span.classList.toggle('selected');
+						updateHiwWriting();
+					};
+
+					container.appendChild(span);
+				}
+			});
+		}
+		
+		function updateHiwWriting() {
+			const selectedElements = document.querySelectorAll('.word.selected');
+			const indices = Array.from(selectedElements).map(el => el.id.replace('word-', ''));
+			
+			const combinedIndices = indices.join(' | ');
+			
+			firebaseRef.child("writing").set(combinedIndices);
+		}
     </script>
 </body>
 </html>
